@@ -1,9 +1,9 @@
 section .data
-	filename db "test.txt", 0
+	filename db "enc_img.txt", 0
 	keyfile db "llave.txt", 0
 	keybuffersize equ 1024
 	buffersize equ 10
-	newfilename db "new_img.txt", 0
+	newfilename db "dec_img.txt", 0
 	nfbuffersize equ 1
 
 section .bss
@@ -344,8 +344,9 @@ set_exp_size:
 	mov rbx, r14 
 	mov [exp_size], bl
 	
-	mov r10, 0
-	mov r12, 100
+	mov r10, 1
+	mov r11, 0
+	mov r12, 10
 	mov word [res], 1
 
 
@@ -420,104 +421,37 @@ _int2str:
 
 	mov rax, 0
 	mov al, byte [res]
-	
-	cmp rax, r12
-	jg _divintgt
-
-	je _divinteq
-
-	cmp rax, 0
-	jz _divintzero
-
-	
-_divexp:	
-
-	mov bl, 10
-	mov rax, r12
-	div bl
-	mov r12, rax
-
-	jmp _int2str
-
-_divintzero:
-	
-	cmp r12, 100
-	je _zeroint
-
-	mov bl, 10
-	mov rax, r12
-	div bl
-	mov r12, rax
-	mov rax, 0
-	jmp _assignascii
-
-_zeroint:
-
-	mov r12, 1
-	mov rax, 0
-	jmp _assignascii
-
-_divintgt:
-	cmp rax, 200
-	je _twohundred
-
-	push rbx
 	mov rbx, r12
-	div bl
-	mov [res], ah
-	pop rbx
-	jmp _assignascii
 
-_divinteq:
-	cmp rax, 100
-	je _onehundred
+_divloop:
 
-	cmp rax, 10
-	je _valten
-
-	cmp r12, 1
-	jg _eqval
-
-	mov [res], al
-	jmp _assignascii
-
-_twohundred:
-	mov rax, 2
-	jmp _valhundreds
-
-_onehundred:
-	mov rax, 1
-	jmp _valhundreds
-
-_valhundreds: 	
-
-	mov r12, 0
-	call _assignascii
-	mov r12, 0
-	mov rax, 0
-	call _assignascii
-	mov r12, 1
-	mov rax, 0
-	jmp _assignascii
-
-_valten: 	
-
-	mov r12, 0
-	mov rax, 1
-	call _assignascii
-	mov r12, 1
-	mov rax, 0
-	jmp _assignascii
+	mov edx, 0
+	div bx
+	push dx
 
 
-_eqval:
+	cmp eax, 0
+	jz _valzero
 
-	mov rax, 0
+	inc r10
 
-	mov [res], al
-	mov al, 1
+	jmp _divloop
+
+
+_valzero:
+	
+	pop ax
+
+	cmp r10, 1
+	je _lastdig
+
+	dec r10
+
 	jmp _assignascii
 	
+_lastdig:
+
+	mov r12, 1
 
 _assignascii:
 
@@ -570,13 +504,13 @@ _bytesleft:
 	cmp r12, 0
 	je _retwrite
 
-	jmp _int2str 
+	jmp _valzero
 
 _addspacebyte:
 	
 	mov al, 32
 	mov [nfbuffer], al
-	dec r12
+	mov r12, 0
 	jmp _writefile	
 
 _retwrite:
