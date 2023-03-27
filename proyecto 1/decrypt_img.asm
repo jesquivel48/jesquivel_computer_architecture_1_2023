@@ -13,7 +13,7 @@ section .bss
 	exp resw 2
 	mod resw 2	
 	base resw 1
-	res resb 1
+	res resw 1
 	exp_size resb 1
 
 section .text
@@ -114,7 +114,6 @@ _getkeydata:
 	mov rcx, 0		;cl init and ch numcount
 	mov rdx, 0		;buffcount
 	mov r11, 0		;tempnum
-	mov r12, 0		;msb
 	mov r13, 0
 	
 _dnbyte:
@@ -157,14 +156,11 @@ _nlbyte:
 	jg _nlbyte
 	push rdx
 	
-	dec ch
+	sub ch, 2
 	mov bh, ch
 	add bh, cl
 	mov rdx, 0
-	push rcx
-	mov ch, 0
-	mov rdx, rcx
-	pop rcx
+	mov dl, cl
 
 
 _keystr2int:
@@ -282,7 +278,7 @@ _getfullword:
 	mov rcx, 0		;cl init and ch numcount
 	mov rdx, 0		;buffcount
 	mov r11, 0		;tempnum
-	mov r12, 0		;msb
+	mov r12, -1		;msb
 	
 _spacebyte:
 	
@@ -329,7 +325,7 @@ _str2int:
 	jl _str2int
 
 	cmp r12, 0
-	jz _savenum
+	jl _savenum
 
 	mov rbx, r12
 	mov rax, r11
@@ -337,6 +333,7 @@ _str2int:
 	mov ah, bl
 	
 	pop rdx
+	mov r15, r8
 	add r8, rdx
 	mov [base], ax
 	;ret
@@ -349,22 +346,23 @@ set_exp_size:
 	
 	mov r10, 0
 	mov r12, 100
-	mov byte [res], 1
+	mov word [res], 1
 
 
 func_mod:
-
-	mov eax, [exp]
+	mov rax, 0
+	mov rcx, 0
+	mov ax, [exp]
 	mov cl, [exp_size]
 	cmp cl, 0
 	jl _int2str	
 
 	
-	shr eax, cl
+	shr ax, cl
 	
-	and eax, 1		;exp temp
+	and ax, 1		;exp temp
 	
-	cmp eax, 0
+	cmp ax, 0
 	je func_mod_0	
 
 	jmp func_mod_1
@@ -372,47 +370,56 @@ func_mod:
 
 func_mod_1:
 
-	mov al, [res]
+	mov rax, 0
+	mov rbx, 0	
+
+	mov ax, [res]
 	mul rax
 
 	mov bx, [mod]
 	div rbx
 	
+	mov rax, 0
+
 	mov ax, [base]
 	mul rdx
 
-	div ebx
-	mov bl, dl
-	mov [res], bl
+	div rbx
+	mov bx, dx
+	mov [res], bx
 	
 	jmp dec_counter
 
 
 func_mod_0:
 
-	mov al, [res]
+	mov rax, 0
+	mov rbx, 0
+
+	mov ax, [res]
 	mul rax
 
 	mov bx, [mod]
 	div rbx
 	
-	mov bl, dl
-	mov [res], bl
+	mov bx, dx
+	mov [res], bx
 	
 	jmp dec_counter
 
 dec_counter:
 
-	mov eax, [exp_size]
-	dec eax
-	mov [exp_size], eax
+	mov rax, 0
 	mov rbx, 0
+	mov ax, [exp_size]
+	dec ax
+	mov [exp_size], ax
 	jmp func_mod
 
 _int2str:
 
 	mov rax, 0
-	mov al, [res]
+	mov al, byte [res]
 	
 	cmp rax, r12
 	jg _divintgt
@@ -451,6 +458,9 @@ _zeroint:
 	jmp _assignascii
 
 _divintgt:
+	cmp rax, 200
+	je _twohundred
+
 	push rbx
 	mov rbx, r12
 	div bl
@@ -459,6 +469,11 @@ _divintgt:
 	jmp _assignascii
 
 _divinteq:
+	cmp rax, 100
+	je _onehundred
+
+	cmp rax, 10
+	je _valten
 
 	cmp r12, 1
 	jg _eqval
@@ -466,12 +481,37 @@ _divinteq:
 	mov [res], al
 	jmp _assignascii
 
+_twohundred:
+	mov rax, 2
+	jmp _valhundreds
+
+_onehundred:
+	mov rax, 1
+	jmp _valhundreds
+
+_valhundreds: 	
+
+	mov r12, 0
+	call _assignascii
+	mov r12, 0
+	mov rax, 0
+	call _assignascii
+	mov r12, 1
+	mov rax, 0
+	jmp _assignascii
+
+_valten: 	
+
+	mov r12, 0
+	mov rax, 1
+	call _assignascii
+	mov r12, 1
+	mov rax, 0
+	jmp _assignascii
+
+
 _eqval:
 
-	mov bl, 10
-	mov rax, r12
-	div bl
-	mov r12, rax
 	mov rax, 0
 
 	mov [res], al
@@ -587,6 +627,8 @@ _error:
 	mov rax, 3
 	mov rdi, rbx
 	syscall
+
+	mov r8, r15
 
 	jmp _readfile
 
