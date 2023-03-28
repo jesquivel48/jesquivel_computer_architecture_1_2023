@@ -19,12 +19,14 @@ Ejecución del programa:
 - El archivo de imagen encriptada debe terminar con un /n y solo debe tener bytes de 0 a 255
 - El archivo de llave debe tener el siguiente formato y debe incluir los valores de d y n:
 
+``` 
     e = 2371
     d = 1531
     n = 2747
     p = 67
     q = 41
-
+    
+```
 
 - Utilizar en consola el comando "python3 view_img.py"
 - Esperar a que se termine la ejecución (esto puede tardar unos segundos)
